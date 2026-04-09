@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>  <html lang="it">  
+<head>  
+<meta charset="UTF-8">  
+<meta name="viewport" content="width=device-width, initial-scale=1.0">  
+<title>Radio Italiane Online</title>  
+<style>  
+  :root {  
+    --accent-color: #1db954;  
+    --bg-dark: #121212;  
+    --card-bg: #1e1e1e;  
+    --player-bg: #181818;  
+  }  body {
+margin: 0;
+font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+background: var(--bg-dark);
+color: white;
+text-align: center;
+padding: 10px;
+padding-bottom: 140px;
+}
+
+header {
+font-size: 24px;
+font-weight: bold;
+margin: 20px 0;
+letter-spacing: 1px;
+}
+
+.container {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+gap: 12px;
+max-width: 1000px;
+margin: 0 auto;
+padding: 10px;
+}
+
+.card {
+background: var(--card-bg);
+border-radius: 12px;
+padding: 20px 10px;
+cursor: pointer;
+transition: transform 0.2s, background 0.2s;
+font-size: 15px;
+font-weight: 500;
+display: flex;
+align-items: center;
+justify-content: center;
+min-height: 60px;
+box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+border: 2px solid transparent;
+}
+
+.card:active { transform: scale(0.95); }
+.card:hover { background: #2a2a2a; }
+
+.card.active {
+border-color: var(--accent-color);
+background: #252525;
+color: var(--accent-color);
+}
+
+.player {
+position: fixed;
+bottom: 0;
+left: 0;
+width: 100%;
+background: var(--player-bg);
+padding: 15px;
+box-sizing: border-box;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 10px;
+border-top: 1px solid #333;
+box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+z-index: 1000;
+}
+
+#nowPlaying {
+font-size: 14px;
+font-weight: bold;
+color: #bbb;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+width: 100%;
+}
+
+audio {
+width: 100%;
+max-width: 500px;
+height: 45px;
+}
+
+@media (min-width: 768px) {
+.player {
+flex-direction: row;
+justify-content: space-between;
+padding: 15px 40px;
+}
+#nowPlaying {
+width: auto;
+font-size: 16px;
+}
+audio {
+width: 350px;
+}
+}
+</style>
+
+</head>  
+<body>  <header>🎧 Radio Italiane Online</header>  <div class="container" id="radioList"></div>  <div class="player">  
+  <span id="nowPlaying">Seleziona una radio per iniziare</span>  
+  <audio id="audioPlayer" controls></audio>  
+</div>  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>  <script>  
+const radios = [  
+  // RDS URL aggiornato con il parametro di streaming diretto usato dai player web  
+  {name: "RDS", url: "https://icstream.rds.radio/rds", type: "mp3"},  
+  {name: "RTL 102.5", url: "https://streamingv2.shoutcast.com/rtl-1025", type: "mp3"},  
+  {name: "Radio 105", url: "https://icecast.unitedradio.it/Radio105.mp3", type: "mp3"},  
+  {name: "Radio Kiss Kiss", url: "https://kisskiss.fluidstream.eu/KissKiss.mp3", type: "mp3"},  
+  {name: "Radio Deejay", url: "https://4c4b867c89244861ac216426883d1ad0.msvdn.net/radiodeejay/radiodeejay/master_ma.m3u8", type: "hls"},  
+  {name: "Radio m2o", url: "https://4c4b867c89244861ac216426883d1ad0.msvdn.net/radiom2o/radiom2o/master_ma.m3u8", type: "hls"},  
+  {name: "Virgin Radio", url: "http://icecast.unitedradio.it/Virgin.mp3", type: "mp3"},  
+  {name: "R101", url: "http://icecast.unitedradio.it/r101_mp3", type: "mp3"},  
+];  
+  
+const container = document.getElementById("radioList");  
+const player = document.getElementById("audioPlayer");  
+const nowPlaying = document.getElementById("nowPlaying");  
+let hls = null;  
+  
+function renderRadios() {  
+  container.innerHTML = "";  
+  radios.forEach(radio => {  
+    const card = document.createElement("div");  
+    card.className = "card";  
+    card.textContent = radio.name;  
+    card.onclick = () => playRadio(radio, card);  
+    container.appendChild(card);  
+  });  
+}  
+  
+function playRadio(radio, card) {  
+  // UI Update  
+  document.querySelectorAll(".card").forEach(c => c.classList.remove("active"));  
+  card.classList.add("active");  
+  nowPlaying.textContent = "In riproduzione: " + radio.name;  
+  
+  // Stop current playback  
+  player.pause();  
+  player.src = "";  
+  
+  if (hls) {  
+    hls.destroy();  
+    hls = null;  
+  }  
+  
+  if (radio.type === "hls" && Hls.isSupported()) {  
+    hls = new Hls();  
+    hls.loadSource(radio.url);  
+    hls.attachMedia(player);  
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {  
+      player.play().catch(e => console.log("Riproduzione bloccata dal browser:", e));  
+    });  
+  } else {  
+    // Per RDS e MP3, forziamo il caricamento del nuovo sorgente  
+    player.src = radio.url;  
+    player.load(); // Importante per resettare il buffer dello stream precedente  
+    player.play().catch(e => console.log("Riproduzione bloccata dal browser:", e));  
+  }  
+}  
+  
+renderRadios();  
+</script>  </body>  
+</html>  
